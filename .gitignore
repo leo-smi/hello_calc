@@ -1,0 +1,17 @@
+# Ignorar pastas de build
+Objects/
+Bin/
+B4A_temp/
+AutoBackups/
+
+
+# Ignorar backups automáticos do B4A
+*.b4a.bak
+*.bas.bak
+
+# Ignorar arquivos temporários do Windows
+Thumbs.db
+Desktop.ini
+
+# Ignorar configurações pessoais
+*.b4a.lock
