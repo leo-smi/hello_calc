@@ -1,29 +1,33 @@
 ﻿Build1=Default,b4a.example
-File1=MainLayout.bal
+File1=doto.ttf
+File2=MainLayout.bal
 FileGroup1=Default Group
+FileGroup2=Default Group
 Group=Default Group
-Library1=core
-Library2=b4xpages
+Library1=b4xpages
+Library2=core
+Library3=javaobject
 ManifestCode='This code will be applied to the manifest file during compilation.~\n~'You do not need to modify it in most cases.~\n~'See this link for for more information: https://www.b4x.com/forum/showthread.php?p=78136~\n~AddManifestText(~\n~<uses-sdk android:minSdkVersion="21" android:targetSdkVersion="35"/>~\n~<supports-screens android:largeScreens="true" ~\n~    android:normalScreens="true" ~\n~    android:smallScreens="true" ~\n~    android:anyDensity="true"/>)~\n~SetApplicationAttribute(android:icon, "@drawable/icon")~\n~SetApplicationAttribute(android:label, "$LABEL$")~\n~CreateResourceFromFile(Macro, Themes.LightTheme)~\n~'End of default text.~\n~
-Module1=|relative|..\B4XMainPage
-Module2=Starter
-NumberOfFiles=1
-NumberOfLibraries=2
-NumberOfModules=2
+Module1=B4XMainPage
+Module2=IntWrapper
+Module3=Starter
+NumberOfFiles=2
+NumberOfLibraries=3
+NumberOfModules=3
 Version=13.4
 @EndOfDesignText@
 '----------------------------------------------
-' 📱 Calculadora de Expressões – Com Estilização de Botões
+' 📱 Expression Calculator – With Button Styling
 '----------------------------------------------
 
 #Region  Project Attributes 
-    #ApplicationLabel: Calculadora Simples
-    #VersionCode: 1
-    #VersionName: 1.0
+    #ApplicationLabel: Hello Calc
+    #VersionCode:      1
+    #VersionName:      1.0
 #End Region
 
 #Region  Activity Attributes 
-    #FullScreen: False
+    #FullScreen:   False
     #IncludeTitle: False
 #End Region
 
@@ -31,237 +35,242 @@ Sub Process_Globals
 End Sub
 
 Sub Globals
-	Private lbExpressao As Label
-	Private lbResultado As Label
-	Private pnlTeclado  As Panel
-    
-	' Botões
-	Private btn0, btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9 As Button
-	Private btnSomar, btnSubtrair, btnMultiplicar, btnDividir As Button
-	Private btnPonto, btnClear, btnResultado, btnBackspace, btnParentesesEsquerdo, btnParentesesDireita As Button
+	Private lbltitle, lblExpression, lblResult As Label
+	Private pnlKeyboard As Panel
+	Dim customFont As Typeface = Typeface.LoadFromAssets("doto.ttf")
+	Private btn0, btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, _
+            btnAdd, btnSubtract, btnMultiply, btnDivide, _
+            btnDot, btnClear, btnEquals, btnBackspace, btnParenLeft, btnParenRight As Button
+	Private buttonsGeneric(), buttonsNumeric(), buttonsOperator(), _
+	        buttonsGrouping(), buttonsPunctuation(), buttonControl() As Object
+	' LCD Color Palette
+	Dim white As         Object = Colors.White
+	Dim black As         Object = Colors.Black
+	Dim greenishLight As Object = Colors.RGB(178, 194, 175)  ' #b2c2af
+	Dim greenish As      Object = Colors.RGB(167, 185, 156)  ' #a7b99c
+	Dim grayishLight As  Object = Colors.RGB(122, 138, 137)  ' #7a8a89
+	Dim grayish As       Object = Colors.RGB(102, 112, 121)  ' #667079
+	Dim darkGray As      Object = Colors.RGB(72,  75,  82)   ' #484b52
+	Dim blackOlive As    Object = Colors.RGB(65,  55,  55)   ' #413737
+	Dim darkSlateGray As Object = Colors.RGB(45,  74,  78)   ' #2d4a4e
+	Dim whiteCoffee As   Object = Colors.RGB(230, 222, 212)  ' #e6ded4
+	Dim gray As          Object = Colors.RGB(123, 128, 129)  ' #7b8081
+	Dim darkGunmetal As  Object = Colors.RGB(19,  41,  42)   ' #13292a
 End Sub
 
+'--------------------------------
+' Activity Lifecycle
 Sub Activity_Create(FirstTime As Boolean)
 	Activity.LoadLayout("MainLayout")
-	
-	' ✅ IMPRIME DIMENSÕES DO DISPOSITIVO
-	Log("=== DIMENSÕES DO DISPOSITIVO ===")
-	Log("Largura da tela (pixels): " & Activity.Width)
-	Log("Altura da tela (pixels): " & Activity.Height)
-	Log("Largura em DIPs: " & (Activity.Width / GetDeviceScale))
-	Log("Altura em DIPs: " & (Activity.Height / GetDeviceScale))
-	Log("Escala (dpi / 160): " & GetDeviceScale)
-	Log("Densidade (DPI real): " & (GetDeviceScale * 160))
-    
-	lbExpressao.Text = ""
-	lbResultado.Text = "Resultado: "
-	
-    
-	' ✅ Define os Tags dos botões de operação (os numéricos já têm Tag no layout)
-'	btnSomar.Tag = "+"
-'	btnSubtrair.Tag = "-"
-'	btnMultiplicar.Tag = "*"
-'	btnDividir.Tag = "/"
-'	btnPonto.Tag = "."
-'	btnClear.Tag = "C"
-'	btnResultado.Tag = "="
-'	btnBackspace.Tag = "<[x]"
-'	btnParentesesEsquerdo.Tag = "("
-'	btnParentesesDireita.Tag = ")"
-    
-	' ✅ Estilização dos botões
-	EstilizarBotaoNumerico(btn0)
-	EstilizarBotaoNumerico(btn1)
-	EstilizarBotaoNumerico(btn2)
-	EstilizarBotaoNumerico(btn3)
-	EstilizarBotaoNumerico(btn4)
-	EstilizarBotaoNumerico(btn5)
-	EstilizarBotaoNumerico(btn6)
-	EstilizarBotaoNumerico(btn7)
-	EstilizarBotaoNumerico(btn8)
-	EstilizarBotaoNumerico(btn9)
-	EstilizarBotaoNumerico(btnPonto)
-	EstilizarBotaoNumerico(btnParentesesEsquerdo)
-	EstilizarBotaoNumerico(btnParentesesDireita)
-    
-	EstilizarBotaoOperacao(btnSomar,       Colors.RGB(0,150,136), Colors.RGB(0,120,110))    ' Verde escuro
-	EstilizarBotaoOperacao(btnSubtrair,    Colors.RGB(255,87,34), Colors.RGB(210,60,20))    ' Laranja
-	EstilizarBotaoOperacao(btnMultiplicar, Colors.RGB(63,81,181), Colors.RGB(40,60,150))   ' Azul
-	EstilizarBotaoOperacao(btnDividir,     Colors.RGB(233,30,99), Colors.RGB(200,10,70))    ' Rosa
-    
-	EstilizarBotaoEspecial(btnClear,       Colors.RGB(255,193,7), Colors.RGB(220,160,0))   ' Amarelo
-	EstilizarBotaoEspecial(btnResultado,   Colors.RGB(76,175,80), Colors.RGB(50,140,50))   ' Verde
-	EstilizarBotaoEspecial(btnBackspace,   Colors.RGB(156,39,176), Colors.RGB(120,20,140)) ' Roxo
-    
-	' Inicializa labels
-	lbExpressao.Text = ""
-	lbResultado.Text = ""
+	' Log device dimensions
+	Log("===== DEVICE DIMENSIONS =====")
+	Log("Screen width (pixels): "  & Activity.Width)
+	Log("Screen height (pixels): " & Activity.Height)
+	Log("Width in DIPs: "          & (Activity.Width / GetDeviceScale))
+	Log("Height in DIPs: "         & (Activity.Height / GetDeviceScale))
+	Log("Scale (dpi / 160): "      & GetDeviceScale)
+	Log("Real DPI: "               & (GetDeviceScale * 160))
+	Log("===== DEVICE DIMENSIONS =====")
+	' Fonts and label styling
+	lblExpression.Typeface  = customFont
+	lblResult.Typeface      = customFont
+	lbltitle.Typeface       = customFont
+	lblExpression.TextSize  = 50
+	lblExpression.TextColor = Colors.Black
+	' Reset labels
+	lblExpression.Text = ""
+	lblResult.Text     = ""
+	' Array of buttons
+	buttonsNumeric     = Array(btn0, btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9)
+	buttonsPunctuation = Array(btnDot)
+	buttonsOperator    = Array(btnAdd, btnSubtract, btnMultiply, btnDivide)
+	buttonsGrouping    = Array(btnParenLeft, btnParenRight)
+	buttonControl      = Array(btnClear, btnEquals, btnBackspace)
+	buttonsGeneric     = Array(buttonsNumeric, buttonsOperator, _
+	                           buttonsGrouping, buttonsPunctuation, buttonControl)      
+ 	Dim textSize As Int = 30
+	' Style numeric buttons
+	For Each btn In buttonsNumeric
+		StyleButton(btn, blackOlive, grayish, black, 20, customFont, textSize)
+	Next
+	' Style punctuation buttons
+	For Each btn In buttonsPunctuation
+		StyleButton(btn, gray, grayishLight, black, 20, customFont, textSize)
+	Next
+	' Style operation buttons
+	For Each btn In buttonsOperator
+		StyleButton(btn, darkSlateGray, grayishLight, black, 20, customFont, textSize)
+	Next
+	' Style grouping buttons
+	For Each btn In buttonsGrouping
+		StyleButton(btn, whiteCoffee, grayishLight, black, 20, customFont, textSize)
+	Next
+	' Style special buttons
+	For Each btn In buttonControl
+		StyleButton(btn, darkGunmetal, grayishLight, white, 20, customFont, textSize)
+	Next
 End Sub
 
-' ✅ Função para obter a escala do dispositivo (DPI / 160)
-Sub GetDeviceScale As Float
-	Dim ctxt As JavaObject
-	ctxt.InitializeContext
-	Dim metrics As JavaObject = ctxt.RunMethodJO("getResources", Null).RunMethodJO("getDisplayMetrics", Null)
-	Return metrics.GetField("density")
+
+Sub Activity_Resume
 End Sub
 
-' ✅ Estiliza botões numéricos e parênteses
-Sub EstilizarBotaoNumerico(btn As Button)
-	EstilizarBotao(btn, Colors.RGB(245,245,245), Colors.RGB(220,220,220), Colors.Black, 20)
+
+Sub Activity_Pause (UserClosed As Boolean)
 End Sub
 
-' ✅ Estiliza botões de operação (+, -, *, /)
-Sub EstilizarBotaoOperacao(btn As Button, CorNormal As Int, CorPressionado As Int)
-	EstilizarBotao(btn, CorNormal, CorPressionado, Colors.White, 20)
+
+'--------------------------------
+' Button Click Handling
+Sub btnGeneric_Click
+	Dim b As Button = Sender
+	ButtonClick(b)
 End Sub
 
-' ✅ Estiliza botões especiais (C, =, M+)
-Sub EstilizarBotaoEspecial(btn As Button, CorNormal As Int, CorPressionado As Int)
-	EstilizarBotao(btn, CorNormal, CorPressionado, Colors.White, 20)
-End Sub
 
-' ✅ Sub de estilização (reutilizável)
-Sub EstilizarBotao(btn As Button, CorNormal As Int, CorPressionado As Int, CorTexto As Int, Raio As Int)
-	Dim gdNormal As ColorDrawable
-	gdNormal.Initialize(CorNormal, Raio)
-    
-	Dim gdPressionado As ColorDrawable
-	gdPressionado.Initialize(CorPressionado, Raio)
-    
-	Dim sld As StateListDrawable
-	sld.Initialize
-	sld.AddState(sld.State_Pressed, gdPressionado)
-	sld.AddCatchAllState(gdNormal)
-    
-	btn.Background = sld
-	btn.TextColor = CorTexto
-	btn.TextSize = 25
-	btn.Typeface = Typeface.DEFAULT_BOLD
-End Sub
-
-' ✅ LÓGICA DA CALCULADORA (mantida intacta)
 Sub ButtonClick(btn As Button)
 	Dim cmd As String = btn.Tag
-	Log("Botão pressionado: " & cmd)
-    
+	Log("Button pressed: " & cmd)
 	Select cmd
 		Case "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "(", ")", ".", "+", "-", "*", "/"
-			lbExpressao.Text = lbExpressao.Text & cmd
-            
-		Case "C"
-			lbExpressao.Text = ""
-			lbResultado.Text = ""
-            
-		Case "="
-			AvaliarExpressao
-            
-		Case "<[x]"
-			If lbExpressao.Text.Length > 0 Then
-				lbExpressao.Text = lbExpressao.Text.SubString2(0, lbExpressao.Text.Length - 1)
-			End If
-            
+			lblExpression.Text = lblExpression.Text & cmd  
+		Case "C": lblExpression.Text = "" : lblResult.Text = ""
+		Case "=": EvaluateExpression  
+		Case "←"
+			If lblExpression.Text.Length > 0 Then
+				lblExpression.Text = lblExpression.Text.SubString2(0, lblExpression.Text.Length - 1)
+			End If 
 		Case Else
-			ToastMessageShow("Botão não configurado: " & cmd, False)
+			ToastMessageShow("Button not configured: " & cmd, False)
 	End Select
 End Sub
 
-Sub AvaliarExpressao
-	Dim expr As String = lbExpressao.Text.Trim
+
+Sub EvaluateExpression
+	Dim expr As String = lblExpression.Text.Trim
 	If expr.Length = 0 Then Return
-    
-	Dim ultimo As String = expr.CharAt(expr.Length - 1)
-	If "+-*/".IndexOf(ultimo) >= 0 Then
-		ToastMessageShow("Expressão incompleta!", False)
-		lbResultado.Text = "Erro: Expressão incompleta!"
+	Dim lastChar As String = expr.CharAt(expr.Length - 1)
+	If "+-*/".IndexOf(lastChar) >= 0 Then
+		ToastMessageShow("Incomplete expression!", False)
+		lblResult.Text = "Error: Incomplete expression!"
 		Return
 	End If
-    
 	Try
-		Dim resultado As Double = AvaliarComShuntingYard(expr)
-		lbResultado.Text = NumberFormat2(resultado, 1, 10, 10, False)
+		Dim result As Double = EvaluateWithShuntingYard(expr)
+		lblResult.Text = NumberFormat2(result, 1, 10, 10, False)
 	Catch
-		lbResultado.Text = "Erro ao calcular!"
-		ToastMessageShow("Erro na expressão!", False)
+		lblResult.Text = "Calculation error!"
+		ToastMessageShow("Invalid expression!", False)
 	End Try
 End Sub
 
-Sub AvaliarComShuntingYard(expr As String) As Double
+
+Sub EvaluateWithShuntingYard(expr As String) As Double
 	expr = expr.Replace(" ", "")
-	Dim tokens As List = Tokenizar(expr)
-    
-	Dim saida As List
-	saida.Initialize
-	Dim pilha As List
-	pilha.Initialize
-    
+	Dim tokens As List = Tokenize(expr)
+	Dim output As List: output.Initialize
+	Dim stack  As List: stack.Initialize
 	For i = 0 To tokens.Size - 1
 		Dim t As String = tokens.Get(i)
 		If IsNumericString(t) Then
-			saida.Add(t)
+			output.Add(t)
 		Else If t = "(" Then
-			pilha.Add(t)
+			stack.Add(t)
 		Else If t = ")" Then
-			Do While pilha.Size > 0
-				Dim topo As String = pilha.Get(pilha.Size - 1)
-				pilha.RemoveAt(pilha.Size - 1)
-				If topo = "(" Then Exit
-				saida.Add(topo)
+			Do While stack.Size > 0
+				Dim top As String = stack.Get(stack.Size - 1)
+				stack.RemoveAt(stack.Size - 1)
+				If top = "(" Then Exit
+				output.Add(top)
 			Loop
 		Else If "+-*/".IndexOf(t) >= 0 Then
-			Do While pilha.Size > 0
-				Dim topo As String = pilha.Get(pilha.Size - 1)
-				If topo = "(" Then Exit
-				If Precedencia(t) <= Precedencia(topo) Then
-					saida.Add(topo)
-					pilha.RemoveAt(pilha.Size - 1)
+			Do While stack.Size > 0
+				Dim top As String = stack.Get(stack.Size - 1)
+				If top = "(" Then Exit
+				If Precedence(t) <= Precedence(top) Then
+					output.Add(top)
+					stack.RemoveAt(stack.Size - 1)
 				Else
 					Exit
 				End If
 			Loop
-			pilha.Add(t)
+			stack.Add(t)
 		End If
 	Next
-    
-	Do While pilha.Size > 0
-		saida.Add(pilha.Get(pilha.Size - 1))
-		pilha.RemoveAt(pilha.Size - 1)
+	Do While stack.Size > 0
+		output.Add(stack.Get(stack.Size - 1))
+		stack.RemoveAt(stack.Size - 1)
 	Loop
-    
-	Dim pilhaNum As List
-	pilhaNum.Initialize
-	For i = 0 To saida.Size - 1
-		Dim t As String = saida.Get(i)
+	Dim numStack As List: numStack.Initialize
+	For i = 0 To output.Size - 1
+		Dim t As String = output.Get(i)
 		If IsNumericString(t) Then
-			pilhaNum.Add(t)
+			numStack.Add(t)
 		Else
-			' Se não houver operandos suficientes, deixe o erro ocorrer naturalmente
-			Dim b As Double = pilhaNum.Get(pilhaNum.Size - 1)
-			Dim a As Double = pilhaNum.Get(pilhaNum.Size - 2)
-			pilhaNum.RemoveAt(pilhaNum.Size - 1)
-			pilhaNum.RemoveAt(pilhaNum.Size - 1)
-            
+			Dim b As Double = numStack.Get(numStack.Size - 1)
+			Dim a As Double = numStack.Get(numStack.Size - 2)
+			numStack.RemoveAt(numStack.Size - 1)
+			numStack.RemoveAt(numStack.Size - 1)
+			
 			Dim res As Double
 			Select t
 				Case "+": res = a + b
 				Case "-": res = a - b
 				Case "*": res = a * b
-				Case "/":
-					res = a / b  ' Se b=0, vai gerar erro real → capturado por Try
+				Case "/": res = a / b
 			End Select
-			pilhaNum.Add(res)
+			numStack.Add(res)
 		End If
 	Next
-	
-	Return pilhaNum.Get(0)  ' Se pilha <> 1, vai dar erro de índice → capturado
+	Return numStack.Get(0)
 End Sub
 
-Sub Tokenizar(expr As String) As List
+Sub Tokenize(expr As String) As List
 	Dim tokens As List
 	tokens.Initialize
 	Dim i As Int = 0
+    
 	Do While i < expr.Length
 		Dim c As String = expr.CharAt(i)
+        
+		' Verifica se é um sinal unário (+ ou −)
+		If (c = "-" Or c = "+") Then
+			Dim isUnary As Boolean = False
+            
+			If i = 0 Then
+				isUnary = True
+			Else
+				Dim prevChar As String = expr.CharAt(i - 1)
+				If "+-*/(".IndexOf(prevChar) >= 0 Then isUnary = True
+			End If
+            
+			If isUnary Then
+				tokens.Add("(")
+				If c = "-" Then tokens.Add("-1") Else tokens.Add("1")
+				tokens.Add("*")
+                
+				i = i + 1
+				Dim startNum As Int = i
+				Do While i < expr.Length
+					c = expr.CharAt(i)
+					If (c >= "0" And c <= "9") Or c = "." Then
+						i = i + 1
+					Else
+						Exit
+					End If
+				Loop
+                
+				If i > startNum Then
+					tokens.Add(expr.SubString2(startNum, i))
+				Else
+					tokens.Add("0")
+				End If
+                
+				tokens.Add(")")
+				Continue
+			End If
+		End If
+        
 		If "+-*/()".IndexOf(c) >= 0 Then
 			tokens.Add(c)
 			i = i + 1
@@ -275,6 +284,7 @@ Sub Tokenizar(expr As String) As List
 			tokens.Add(expr.SubString2(start, i))
 		End If
 	Loop
+    
 	Return tokens
 End Sub
 
@@ -284,95 +294,31 @@ Sub IsNumericString(s As String) As Boolean
 	Return IsNumber(s)
 End Sub
 
-Sub Precedencia(op As String) As Int
+Sub Precedence(op As String) As Int
 	If op = "*" Or op = "/" Then Return 2
 	Return 1
 End Sub
 
-Sub Activity_Resume
+'--------------------------------
+' Button Styling
+Sub StyleButton(btn As Button, NormalColor As Int, PressedColor As Int, _
+	            TextColor As Int, Radius As Int, Font As Typeface, TextSize As Int)		
+	Dim gdNormal As ColorDrawable:  gdNormal.Initialize(NormalColor, Radius)
+	Dim gdPressed As ColorDrawable: gdPressed.Initialize(PressedColor, Radius)
+	Dim sld As StateListDrawable:   sld.Initialize
+	sld.AddState(sld.State_Pressed, gdPressed)
+	sld.AddCatchAllState(gdNormal)
+	btn.Typeface   = Font
+	btn.Background = sld
+	btn.TextColor  = TextColor
+	btn.TextSize   = TextSize
 End Sub
 
-Sub Activity_Pause (UserClosed As Boolean)
+'--------------------------------
+' Utility
+Sub GetDeviceScale As Float
+	Dim ctxt As JavaObject
+	ctxt.InitializeContext
+	Dim metrics As JavaObject = ctxt.RunMethodJO("getResources", Null).RunMethodJO("getDisplayMetrics", Null)
+	Return metrics.GetField("density")
 End Sub
-
-' ✅ PONTE DE EVENTOS
-Sub btn0_Click
-	ButtonClick(btn0)
-End Sub
-
-Sub btn1_Click
-	ButtonClick(btn1)
-End Sub
-
-Sub btn2_Click
-	ButtonClick(btn2)
-End Sub
-
-Sub btn3_Click
-	ButtonClick(btn3)
-End Sub
-
-Sub btn4_Click
-	ButtonClick(btn4)
-End Sub
-
-Sub btn5_Click
-	ButtonClick(btn5)
-End Sub
-
-Sub btn6_Click
-	ButtonClick(btn6)
-End Sub
-
-Sub btn7_Click
-	ButtonClick(btn7)
-End Sub
-
-Sub btn8_Click
-	ButtonClick(btn8)
-End Sub
-
-Sub btn9_Click
-	ButtonClick(btn9)
-End Sub
-
-Sub btnSomar_Click
-	ButtonClick(btnSomar)
-End Sub
-
-Sub btnSubtrair_Click
-	ButtonClick(btnSubtrair)
-End Sub
-
-Sub btnMultiplicar_Click
-	ButtonClick(btnMultiplicar)
-End Sub
-
-Sub btnDividir_Click
-	ButtonClick(btnDividir)
-End Sub
-
-Sub btnPonto_Click
-	ButtonClick(btnPonto)
-End Sub
-
-Sub btnClear_Click
-	ButtonClick(btnClear)
-End Sub
-
-Sub btnResultado_Click
-	ButtonClick(btnResultado)
-End Sub
-
-Sub btnBackspace_Click
-	ButtonClick(btnBackspace)
-End Sub
-
-Sub btnParentesesEsquerdo_Click
-	ButtonClick(btnParentesesEsquerdo)
-End Sub
-
-Sub btnParentesesDireita_Click
-	ButtonClick(btnParentesesDireita)
-End Sub
-
