@@ -1,0 +1,79 @@
+{
+    "title": {
+        "type":           "label",
+        "text":           "Hello Calc",
+        "left":           "2%x",
+        "top":            "1%y",
+        "width":          "96%x",
+        "height":         "4%y",
+        "textSize":       24,
+        "textColor":      "#000000",
+        "font":           "doto.ttf",
+        "gravity":        "center | center_horizontal",
+        "cornerRadiiDip": "12,12,0,0"        
+    },
+    "expression": {
+        "type":            "label",
+        "text":            "",
+        "left":            "2%x",
+        "top":             "6%y",
+        "width":           "96%x",
+        "height":          "24%y",
+        "textSize":        40,
+        "textColor":       "#000000",
+        "font":            "doto.ttf",
+        "backgroundColor": "#484b52",
+        "cornerRadiiDip":  "12,12,12,12",
+        "gravity":         "bottom | right"                  
+    },
+    "result": {
+        "type":            "label",
+        "text":            "",
+        "left":            "2%x",
+        "top":             "31%y",
+        "width":           "96%x",
+        "height":          "28%y",
+        "textSize":        30,
+        "textColor":       "#000000",
+        "font":            "doto.ttf",
+        "backgroundColor": "#7a8a89",
+        "cornerRadiiDip":  "12,12,12,12",
+        "gravity":         "bottom | right"            
+    },
+    "keyboard": {
+        "type":            "panel",
+        "left":            "2%x",
+        "width":           "96%x",
+        "top":             "60%y",
+        "height":          "39%y",
+        "gapX":            "2%x",
+        "gapY":            "2%y",        
+        "backgroundColor": "#ffffff"
+    },
+    "buttons": [
+        {"id": "btnAdd",        "text": "+", "tag": "+", "row": 0, "col": 0, "color": "#2d4a4e", "pressedColor": "#7a8a89", "textColor": "#000000", "cornerRadiiDip": "12,12,12,12"},
+        {"id": "btnSubtract",   "text": "−", "tag": "-", "row": 0, "col": 1, "color": "#2d4a4e", "pressedColor": "#7a8a89", "textColor": "#000000", "cornerRadiiDip": "12,12,12,12"},
+        {"id": "btnMultiply",   "text": "×", "tag": "*", "row": 0, "col": 2, "color": "#2d4a4e", "pressedColor": "#7a8a89", "textColor": "#000000", "cornerRadiiDip": "12,12,12,12"},
+        {"id": "btnDivide",     "text": "÷", "tag": "/", "row": 0, "col": 3, "color": "#2d4a4e", "pressedColor": "#7a8a89", "textColor": "#000000", "cornerRadiiDip": "12,12,12,12"},
+    
+        {"id": "btn7",          "text": "7", "tag": "7", "row": 1, "col": 0, "color": "#413737", "pressedColor": "#7a8a89", "textColor": "#000000", "cornerRadiiDip": "12,12,12,12"},
+        {"id": "btn8",          "text": "8", "tag": "8", "row": 1, "col": 1, "color": "#413737", "pressedColor": "#7a8a89", "textColor": "#000000", "cornerRadiiDip": "12,12,12,12"},
+        {"id": "btn9",          "text": "9", "tag": "9", "row": 1, "col": 2, "color": "#413737", "pressedColor": "#7a8a89", "textColor": "#000000", "cornerRadiiDip": "12,12,12,12"},
+        {"id": "btnParenLeft",  "text": "(", "tag": "(", "row": 1, "col": 3, "color": "#e6ded4", "pressedColor": "#7a8a89", "textColor": "#000000", "cornerRadiiDip": "12,12,12,12"},
+                        
+        {"id": "btn4",          "text": "4", "tag": "4", "row": 2, "col": 0, "color": "#413737", "pressedColor": "#7a8a89", "textColor": "#000000", "cornerRadiiDip": "12,12,12,12"},
+        {"id": "btn5",          "text": "5", "tag": "5", "row": 2, "col": 1, "color": "#413737", "pressedColor": "#7a8a89", "textColor": "#000000", "cornerRadiiDip": "12,12,12,12"},
+        {"id": "btn6",          "text": "6", "tag": "6", "row": 2, "col": 2, "color": "#413737", "pressedColor": "#7a8a89", "textColor": "#000000", "cornerRadiiDip": "12,12,12,12"},
+        {"id": "btnParenRight", "text": ")", "tag": ")", "row": 2, "col": 3, "color": "#e6ded4", "pressedColor": "#7a8a89", "textColor": "#000000", "cornerRadiiDip": "12,12,12,12"},
+        
+        {"id": "btn1",          "text": "1", "tag": "1", "row": 3, "col": 0, "color": "#413737", "pressedColor": "#7a8a89", "textColor": "#000000", "cornerRadiiDip": "12,12,12,12"},
+        {"id": "btn2",          "text": "2", "tag": "2", "row": 3, "col": 1, "color": "#413737", "pressedColor": "#7a8a89", "textColor": "#000000", "cornerRadiiDip": "12,12,12,12"},
+        {"id": "btn3",          "text": "3", "tag": "3", "row": 3, "col": 2, "color": "#413737", "pressedColor": "#7a8a89", "textColor": "#000000", "cornerRadiiDip": "12,12,12,12"},
+        {"id": "btnBackspace",  "text": "←", "tag": "←", "row": 3, "col": 3, "color": "#13292a", "pressedColor": "#7a8a89", "textColor": "#ffffff", "cornerRadiiDip": "12,12,12,12"},
+            
+        {"id": "btn0",          "text": "0", "tag": "0", "row": 4, "col": 0, "color": "#413737", "pressedColor": "#7a8a89", "textColor": "#000000", "cornerRadiiDip": "12,12,12,12"},
+        {"id": "btnDot",        "text": ".", "tag": ".", "row": 4, "col": 1, "color": "#7b8081", "pressedColor": "#7a8a89", "textColor": "#000000", "cornerRadiiDip": "12,12,12,12"},
+        {"id": "btnClear",      "text": "C", "tag": "C", "row": 4, "col": 2, "color": "#13292a", "pressedColor": "#7a8a89", "textColor": "#ffffff", "cornerRadiiDip": "12,12,12,12"},
+        {"id": "btnEquals",     "text": "=", "tag": "=", "row": 4, "col": 3, "color": "#13292a", "pressedColor": "#7a8a89", "textColor": "#ffffff", "cornerRadiiDip": "12,12,12,12"}
+    ]
+}

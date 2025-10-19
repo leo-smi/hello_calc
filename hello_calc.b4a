@@ -1,25 +1,24 @@
 ﻿Build1=Default,b4a.example
 File1=doto.ttf
-File2=MainLayout.bal
+File2=layout.json
+File3=MainLayout.bal
 FileGroup1=Default Group
 FileGroup2=Default Group
+FileGroup3=Default Group
 Group=Default Group
 Library1=b4xpages
 Library2=core
 Library3=javaobject
+Library4=json
 ManifestCode='This code will be applied to the manifest file during compilation.~\n~'You do not need to modify it in most cases.~\n~'See this link for for more information: https://www.b4x.com/forum/showthread.php?p=78136~\n~AddManifestText(~\n~<uses-sdk android:minSdkVersion="21" android:targetSdkVersion="35"/>~\n~<supports-screens android:largeScreens="true" ~\n~    android:normalScreens="true" ~\n~    android:smallScreens="true" ~\n~    android:anyDensity="true"/>)~\n~SetApplicationAttribute(android:icon, "@drawable/icon")~\n~SetApplicationAttribute(android:label, "$LABEL$")~\n~CreateResourceFromFile(Macro, Themes.LightTheme)~\n~'End of default text.~\n~
 Module1=B4XMainPage
 Module2=IntWrapper
 Module3=Starter
-NumberOfFiles=2
-NumberOfLibraries=3
+NumberOfFiles=3
+NumberOfLibraries=4
 NumberOfModules=3
 Version=13.4
 @EndOfDesignText@
-'----------------------------------------------
-' 📱 Expression Calculator – With Button Styling
-'----------------------------------------------
-
 #Region  Project Attributes 
     #ApplicationLabel: Hello Calc
     #VersionCode:      1
@@ -35,116 +34,321 @@ Sub Process_Globals
 End Sub
 
 Sub Globals
+	Private layoutJson As String
 	Private lbltitle, lblExpression, lblResult As Label
 	Private pnlKeyboard As Panel
-	Dim customFont As Typeface = Typeface.LoadFromAssets("doto.ttf")
-	Private btn0, btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, _
-            btnAdd, btnSubtract, btnMultiply, btnDivide, _
-            btnDot, btnClear, btnEquals, btnBackspace, btnParenLeft, btnParenRight As Button
-	Private buttonsGeneric(), buttonsNumeric(), buttonsOperator(), _
-	        buttonsGrouping(), buttonsPunctuation(), buttonControl() As Object
-	' LCD Color Palette
-	Dim white As         Object = Colors.White
-	Dim black As         Object = Colors.Black
-	Dim greenishLight As Object = Colors.RGB(178, 194, 175)  ' #b2c2af
-	Dim greenish As      Object = Colors.RGB(167, 185, 156)  ' #a7b99c
-	Dim grayishLight As  Object = Colors.RGB(122, 138, 137)  ' #7a8a89
-	Dim grayish As       Object = Colors.RGB(102, 112, 121)  ' #667079
-	Dim darkGray As      Object = Colors.RGB(72,  75,  82)   ' #484b52
-	Dim blackOlive As    Object = Colors.RGB(65,  55,  55)   ' #413737
-	Dim darkSlateGray As Object = Colors.RGB(45,  74,  78)   ' #2d4a4e
-	Dim whiteCoffee As   Object = Colors.RGB(230, 222, 212)  ' #e6ded4
-	Dim gray As          Object = Colors.RGB(123, 128, 129)  ' #7b8081
-	Dim darkGunmetal As  Object = Colors.RGB(19,  41,  42)   ' #13292a
+	Private customFont As Typeface
+	Private buttonsMap As Map ' Para armazenar referências aos botões criados
+	' Private buttonList As List ' Lista de todos os botões | se for usar: buttonList.Initialize
 End Sub
 
-'--------------------------------
-' Activity Lifecycle
 Sub Activity_Create(FirstTime As Boolean)
-	Activity.LoadLayout("MainLayout")
-	' Log device dimensions
-	Log("===== DEVICE DIMENSIONS =====")
+	layoutJson = File.ReadString(File.DirAssets, "layout.json")
+	Dim parser  As JSONParser: parser.Initialize(layoutJson)
+	Dim root    As Map  = parser.NextObject
+	Dim btnDefs As List = root.Get("buttons")
+	customFont = Typeface.LoadFromAssets("doto.ttf")
+	CreateLabelFromJson("title", root.Get("title"))
+	CreateLabelFromJson("expression", root.Get("expression"))
+	CreateLabelFromJson("result", root.Get("result"))
+	CreatePanelFromJson(root.Get("keyboard"))
+	buttonsMap.Initialize
+	For Each btnDef As Map In btnDefs
+		Dim btn As Button = CreateButtonFromJson(btnDef)
+		buttonsMap.Put(btnDef.Get("id"), btn)
+	Next
+	PositionButtonsInGrid(btnDefs, 5, 4) ' ← passa as definições, não os botões!
+	lblExpression.Text = ""
+	lblResult.Text = ""
+	LogDeviceDimensions
+End Sub
+
+Sub CreateLabelFromJson(varName As String, config As Map)
+	Dim lbl As Label: lbl.Initialize("")
+	
+	Dim left   As Float = ParsePercent(config.Get("left"))
+	Dim top    As Float = ParsePercent(config.Get("top"))
+	Dim width  As Float = ParsePercent(config.Get("width"))
+	Dim height As Float = ParsePercent(config.Get("height"))
+    
+	lbl.Text      = config.Get("text")
+	lbl.TextSize  = config.Get("textSize")
+	lbl.TextColor = ParseColor(config.Get("textColor"))
+	lbl.Typeface  = customFont
+    
+	' --- Gravity: suporte a "left | top", "bottom | right", etc. ---
+	Dim grav As Int = Gravity.LEFT + Gravity.TOP ' padrão
+    
+	If config.ContainsKey("gravity") Then
+		Dim gStr As String = config.Get("gravity")
+		gStr = gStr.ToLowerCase.Trim
+        
+		If gStr = "center" Then
+			grav = Gravity.CENTER
+		Else If gStr = "fill" Then
+			grav = Gravity.FILL
+		Else
+			' Divide por "|" com espaços opcionais
+			Dim parts() As String = Regex.Split("\s*\|\s*", gStr)
+			Dim hAlign As Int = Gravity.LEFT
+			Dim vAlign As Int = Gravity.TOP
+            
+			For Each part As String In parts
+				Select part
+					' --- Horizontal ---
+					Case "left"
+						hAlign = Gravity.LEFT
+					Case "center_horizontal", "center_h", "center"
+						hAlign = Gravity.CENTER_HORIZONTAL
+					Case "right"
+						hAlign = Gravity.RIGHT
+                    
+						' --- Vertical ---
+					Case "top"
+						vAlign = Gravity.TOP
+					Case "center_vertical", "center_v", "center"
+						vAlign = Gravity.CENTER_VERTICAL
+					Case "bottom"
+						vAlign = Gravity.BOTTOM
+				End Select
+			Next
+            
+			grav = hAlign + vAlign
+		End If
+	End If
+    
+	lbl.Gravity = grav
+
+	' --- Fundo ---
+	If config.ContainsKey("backgroundColor") Then
+		Dim bgColor As Int = ParseColor(config.Get("backgroundColor"))
+		SetRoundedBackground(lbl, bgColor, config)
+	End If
+
+	Activity.AddView(lbl, left, top, width, height)
+    
+	Select varName
+		Case "title":      lbltitle      = lbl
+		Case "expression": lblExpression = lbl
+		Case "result":     lblResult     = lbl
+	End Select
+End Sub
+
+Sub SetRoundedBackground(view As View, backgroundColor As Int, config As Map)
+	' Primeiro, verifica se há definição de bordas arredondadas
+	If config.ContainsKey("cornerRadiiDip") Then
+		Dim radiiSpec As String = config.Get("cornerRadiiDip")
+		Dim corners() As String = Regex.Split(",", radiiSpec)
+		If corners.Length = 4 Then
+			Dim radii(8) As Float
+			Dim scale As Float = GetDeviceScale
+			For i = 0 To 3
+				Dim r As Float = corners(i)
+				radii(i * 2) = r * scale     ' radiusX
+				radii(i * 2 + 1) = r * scale ' radiusY
+			Next
+			Dim gd As JavaObject
+			gd.InitializeNewInstance("android.graphics.drawable.GradientDrawable", Null)
+			gd.RunMethod("setColor", Array As Object(backgroundColor))
+			gd.RunMethod("setCornerRadii", Array As Object(radii))
+			view.Background = gd
+			Return
+		Else
+			Log("Error: cornerRadiiDip must have 4 values (TL,TR,BR,BL)")
+		End If
+	End If
+
+	' Segundo, tenta arredondamento uniforme
+	If config.ContainsKey("cornerRadius") Then
+		Dim radiusDip As Float = config.Get("cornerRadius")
+		Dim radiusPx As Float = radiusDip * GetDeviceScale
+		Dim cd As ColorDrawable
+		cd.Initialize(backgroundColor, radiusPx)
+		view.Background = cd
+		Return
+	End If
+
+	' Por fim, aplica cor plana (sem arredondamento)
+	view.Color = backgroundColor
+End Sub
+
+Sub CreatePanelFromJson(config As Map)
+	pnlKeyboard.Initialize("")
+	Dim left    As Float = ParsePercent(config.Get("left"))
+	Dim top     As Float = ParsePercent(config.Get("top"))
+	Dim width   As Float = ParsePercent(config.Get("width"))
+'	Dim height  As Float = Activity.Height - top  ' ← vai até o final!
+	Dim height  As Float = ParsePercent(config.Get("height"))  ' ← vai até o final!
+	Dim bgColor As Int   = ParseColor(config.GetDefault("backgroundColor", "#ffffff"))
+	Activity.AddView(pnlKeyboard, left, top, width, height)
+	pnlKeyboard.Color = bgColor
+End Sub
+
+Sub CreateButtonFromJson(config As Map) As Button
+	Dim btn As Button
+	btn.Initialize("btnGeneric")
+	btn.Text = config.Get("text")
+	btn.Tag = config.Get("tag")
+	btn.Typeface = customFont
+	btn.TextSize = 30
+	btn.TextColor = ParseColor(config.Get("textColor"))
+
+	' --- Estilo de fundo com suporte a bordas arredondadas ---
+	Dim normalColor As Int = ParseColor(config.Get("color"))
+	Dim pressedColor As Int = ParseColor(config.Get("pressedColor"))
+
+	' Criar drawable normal
+	Dim normalDrawable As JavaObject
+	If config.ContainsKey("cornerRadiiDip") Or config.ContainsKey("cornerRadius") Then
+		' Usa GradientDrawable personalizado
+		normalDrawable = CreateStateDrawable(normalColor, config)
+	Else
+		' Usa ColorDrawable simples
+		Dim cdNormal As ColorDrawable: cdNormal.Initialize(normalColor, 0)
+		normalDrawable = cdNormal
+	End If
+	
+	' Criar drawable pressionado
+	Dim pressedDrawable As JavaObject
+	If config.ContainsKey("cornerRadiiDip") Or config.ContainsKey("cornerRadius") Then
+		pressedDrawable = CreateStateDrawable(pressedColor, config)
+	Else
+		Dim cdPressed As ColorDrawable: cdPressed.Initialize(pressedColor, 0)
+		pressedDrawable = cdPressed
+	End If
+	
+	' StateList para efeito pressionado
+	Dim sld As StateListDrawable: sld.Initialize
+	sld.AddState(sld.State_Pressed, pressedDrawable)
+	sld.AddCatchAllState(normalDrawable)
+	btn.Background = sld
+	
+	Return btn
+End Sub
+
+Sub CreateStateDrawable(color As Int, config As Map) As JavaObject
+	If config.ContainsKey("cornerRadiiDip") Then
+		Dim radiiSpec As String = config.Get("cornerRadiiDip")
+		Dim corners() As String = Regex.Split(",", radiiSpec)
+		If corners.Length = 4 Then
+			Dim radii(8) As Float
+			Dim scale As Float = GetDeviceScale
+			For i = 0 To 3
+				Dim r As Float = corners(i)
+				radii(i * 2) = r * scale
+				radii(i * 2 + 1) = r * scale
+			Next
+			Dim gd As JavaObject
+			gd.InitializeNewInstance("android.graphics.drawable.GradientDrawable", Null)
+			gd.RunMethod("setColor", Array As Object(color))
+			gd.RunMethod("setCornerRadii", Array As Object(radii))
+			Return gd
+		End If
+	End If
+
+	If config.ContainsKey("cornerRadius") Then
+		Dim radiusDip As Float = config.Get("cornerRadius")
+		Dim radiusPx As Float = radiusDip * GetDeviceScale
+		Dim cd As ColorDrawable
+		cd.Initialize(color, radiusPx)
+		Return cd
+	End If
+
+	' Fallback: retângulo sem bordas
+	Dim cd As ColorDrawable: cd.Initialize(color, 0)
+	Return cd
+End Sub
+
+Sub PositionButtonsInGrid(btnDefinitions As List, rows As Int, cols As Int)
+	Dim gapX As Float = 8dip
+	Dim gapY As Float = 8dip
+	Dim totalGapX As Float = (cols - 1) * gapX
+	Dim totalGapY As Float = (rows - 1) * gapY
+	Dim availableWidth As Float = pnlKeyboard.Width - totalGapX
+	Dim availableHeight As Float = pnlKeyboard.Height - totalGapY
+	Dim btnWidth As Float = availableWidth / cols
+	Dim btnHeight As Float = availableHeight / rows
+	For Each btnDef As Map In btnDefinitions
+		Dim btn As Button = buttonsMap.Get(btnDef.Get("id"))
+		If btn.IsInitialized = False Then Continue
+		Dim row As Int = btnDef.Get("row")
+		Dim col As Int = btnDef.Get("col")
+		Dim left As Float = col * (btnWidth + gapX)
+		Dim top As Float = row * (btnHeight + gapY)
+		pnlKeyboard.AddView(btn, left, top, btnWidth, btnHeight)
+	Next
+End Sub
+
+Sub ParsePercent(s As String) As Float
+	If s.EndsWith("%x") Then
+		Return Activity.Width * (s.SubString2(0, s.Length - 2).Trim / 100)
+	Else If s.EndsWith("%y") Then
+		Return Activity.Height * (s.SubString2(0, s.Length - 2).Trim / 100)
+	Else
+		Try
+			Return s
+		Catch
+			Log("Invalid dimension value: " & s)
+			Return 0
+		End Try
+	End If
+End Sub
+
+Sub ParseColor(hex As String) As Int
+	If hex.StartsWith("#") Then
+		hex = hex.SubString(1)
+		If hex.Length = 6 Then
+			Dim r As Int = Bit.ParseInt(hex.SubString2(0, 2), 16)
+			Dim g As Int = Bit.ParseInt(hex.SubString2(2, 4), 16)
+			Dim b As Int = Bit.ParseInt(hex.SubString2(4, 6), 16)
+			Return Colors.RGB(r, g, b)
+		Else If hex.Length = 3 Then
+			Dim r As Int = Bit.ParseInt(hex.SubString2(0, 1) & hex.SubString2(0, 1), 16)
+			Dim g As Int = Bit.ParseInt(hex.SubString2(1, 2) & hex.SubString2(1, 2), 16)
+			Dim b As Int = Bit.ParseInt(hex.SubString2(2, 3) & hex.SubString2(2, 3), 16)
+			Return Colors.RGB(r, g, b)
+		End If
+	End If
+	Log("Invalid color format: " & hex)
+	Return Colors.Black
+End Sub
+
+Sub LogDeviceDimensions
+	Log("====== DEVICE DIMENSIONS ======")
 	Log("Screen width (pixels): "  & Activity.Width)
 	Log("Screen height (pixels): " & Activity.Height)
 	Log("Width in DIPs: "          & (Activity.Width / GetDeviceScale))
 	Log("Height in DIPs: "         & (Activity.Height / GetDeviceScale))
 	Log("Scale (dpi / 160): "      & GetDeviceScale)
 	Log("Real DPI: "               & (GetDeviceScale * 160))
-	Log("===== DEVICE DIMENSIONS =====")
-	' Fonts and label styling
-	lblExpression.Typeface  = customFont
-	lblResult.Typeface      = customFont
-	lbltitle.Typeface       = customFont
-	lblExpression.TextSize  = 50
-	lblExpression.TextColor = Colors.Black
-	' Reset labels
-	lblExpression.Text = ""
-	lblResult.Text     = ""
-	' Array of buttons
-	buttonsNumeric     = Array(btn0, btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9)
-	buttonsPunctuation = Array(btnDot)
-	buttonsOperator    = Array(btnAdd, btnSubtract, btnMultiply, btnDivide)
-	buttonsGrouping    = Array(btnParenLeft, btnParenRight)
-	buttonControl      = Array(btnClear, btnEquals, btnBackspace)
-	buttonsGeneric     = Array(buttonsNumeric, buttonsOperator, _
-	                           buttonsGrouping, buttonsPunctuation, buttonControl)      
- 	Dim textSize As Int = 30
-	' Style numeric buttons
-	For Each btn In buttonsNumeric
-		StyleButton(btn, blackOlive, grayish, black, 20, customFont, textSize)
-	Next
-	' Style punctuation buttons
-	For Each btn In buttonsPunctuation
-		StyleButton(btn, gray, grayishLight, black, 20, customFont, textSize)
-	Next
-	' Style operation buttons
-	For Each btn In buttonsOperator
-		StyleButton(btn, darkSlateGray, grayishLight, black, 20, customFont, textSize)
-	Next
-	' Style grouping buttons
-	For Each btn In buttonsGrouping
-		StyleButton(btn, whiteCoffee, grayishLight, black, 20, customFont, textSize)
-	Next
-	' Style special buttons
-	For Each btn In buttonControl
-		StyleButton(btn, darkGunmetal, grayishLight, white, 20, customFont, textSize)
-	Next
+	Log("====== DEVICE DIMENSIONS ======")
 End Sub
-
-
-Sub Activity_Resume
-End Sub
-
-
-Sub Activity_Pause (UserClosed As Boolean)
-End Sub
-
 
 '--------------------------------
-' Button Click Handling
+' Eventos (mantidos)
 Sub btnGeneric_Click
 	Dim b As Button = Sender
 	ButtonClick(b)
 End Sub
-
 
 Sub ButtonClick(btn As Button)
 	Dim cmd As String = btn.Tag
 	Log("Button pressed: " & cmd)
 	Select cmd
 		Case "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "(", ")", ".", "+", "-", "*", "/"
-			lblExpression.Text = lblExpression.Text & cmd  
+			lblExpression.Text = lblExpression.Text & cmd
 		Case "C": lblExpression.Text = "" : lblResult.Text = ""
-		Case "=": EvaluateExpression  
+		Case "=": EvaluateExpression
 		Case "←"
 			If lblExpression.Text.Length > 0 Then
 				lblExpression.Text = lblExpression.Text.SubString2(0, lblExpression.Text.Length - 1)
-			End If 
+			End If
 		Case Else
 			ToastMessageShow("Button not configured: " & cmd, False)
 	End Select
 End Sub
 
+' ---------------------------------------------------------------------------
 
 Sub EvaluateExpression
 	Dim expr As String = lblExpression.Text.Trim
@@ -163,7 +367,6 @@ Sub EvaluateExpression
 		ToastMessageShow("Invalid expression!", False)
 	End Try
 End Sub
-
 
 Sub EvaluateWithShuntingYard(expr As String) As Double
 	expr = expr.Replace(" ", "")
@@ -229,26 +432,21 @@ Sub Tokenize(expr As String) As List
 	Dim tokens As List
 	tokens.Initialize
 	Dim i As Int = 0
-    
 	Do While i < expr.Length
 		Dim c As String = expr.CharAt(i)
-        
 		' Verifica se é um sinal unário (+ ou −)
 		If (c = "-" Or c = "+") Then
-			Dim isUnary As Boolean = False
-            
+			Dim isUnary As Boolean = False 
 			If i = 0 Then
 				isUnary = True
 			Else
 				Dim prevChar As String = expr.CharAt(i - 1)
 				If "+-*/(".IndexOf(prevChar) >= 0 Then isUnary = True
 			End If
-            
 			If isUnary Then
 				tokens.Add("(")
 				If c = "-" Then tokens.Add("-1") Else tokens.Add("1")
-				tokens.Add("*")
-                
+				tokens.Add("*")                
 				i = i + 1
 				Dim startNum As Int = i
 				Do While i < expr.Length
@@ -258,19 +456,16 @@ Sub Tokenize(expr As String) As List
 					Else
 						Exit
 					End If
-				Loop
-                
+				Loop                
 				If i > startNum Then
 					tokens.Add(expr.SubString2(startNum, i))
 				Else
 					tokens.Add("0")
-				End If
-                
+				End If                
 				tokens.Add(")")
 				Continue
 			End If
-		End If
-        
+		End If        
 		If "+-*/()".IndexOf(c) >= 0 Then
 			tokens.Add(c)
 			i = i + 1
@@ -283,8 +478,7 @@ Sub Tokenize(expr As String) As List
 			Loop
 			tokens.Add(expr.SubString2(start, i))
 		End If
-	Loop
-    
+	Loop    
 	Return tokens
 End Sub
 
@@ -299,26 +493,13 @@ Sub Precedence(op As String) As Int
 	Return 1
 End Sub
 
-'--------------------------------
-' Button Styling
-Sub StyleButton(btn As Button, NormalColor As Int, PressedColor As Int, _
-	            TextColor As Int, Radius As Int, Font As Typeface, TextSize As Int)		
-	Dim gdNormal As ColorDrawable:  gdNormal.Initialize(NormalColor, Radius)
-	Dim gdPressed As ColorDrawable: gdPressed.Initialize(PressedColor, Radius)
-	Dim sld As StateListDrawable:   sld.Initialize
-	sld.AddState(sld.State_Pressed, gdPressed)
-	sld.AddCatchAllState(gdNormal)
-	btn.Typeface   = Font
-	btn.Background = sld
-	btn.TextColor  = TextColor
-	btn.TextSize   = TextSize
-End Sub
 
 '--------------------------------
 ' Utility
 Sub GetDeviceScale As Float
-	Dim ctxt As JavaObject
-	ctxt.InitializeContext
+	Dim ctxt As JavaObject: ctxt.InitializeContext
 	Dim metrics As JavaObject = ctxt.RunMethodJO("getResources", Null).RunMethodJO("getDisplayMetrics", Null)
 	Return metrics.GetField("density")
 End Sub
+
+
